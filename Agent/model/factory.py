@@ -1,13 +1,11 @@
 #系统模块
 import os
 from typing import Any
-
 #第三方模块
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models import BaseChatModel
 from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_community.chat_models import ChatTongyi
-
 #自定义模块
 from utils.config_handler import rag_conf
 from utils.logger_handler import logger
@@ -30,7 +28,6 @@ class ChatModelFactory(BaseModelFactory):
         logger.info(f"加载聊天模型 | type={model_type}, name={model_name}")
 
         if model_type == "tongyi":
-            # ✅ 正确：聊天模型用 ChatTongyi
             return ChatTongyi(
                 model=model_name,
                 api_key=os.getenv("DASHSCOPE_API_KEY")

@@ -1,6 +1,6 @@
 # 系统模块
 import os
-import re  # 【新增1】导入正则表达式，用于提取定位行
+import re
 from typing import List, Optional
 # 第三方库
 from langchain_core.documents import Document
@@ -21,17 +21,17 @@ class DSRagService:
         logger.info("=" * 60)
         logger.info("开始初始化 DSRagService...")
 
-        # ===================== 配置读取 & 异常捕获 =====================
+        # ===================== 配置读取 =====================
         try:
-            self.k_default_k: int = chroma_conf.get("k", 3)
-            self.k_data_path: str = chroma_conf.get("data_path", "./data")
+            self.k_default_k:int = chroma_conf.get("k", 3)
+            self.k_data_path:str = chroma_conf.get("data_path", "./data")
             logger.info(f"配置读取成功 | k={self.k_default_k}, data_path={self.k_data_path}")
 
         except Exception as e:
-            logger.error(f"读取 chroma_conf 配置失败！错误信息：{str(e)}")
+            logger.error(f"读取配置失败：{str(e)}")
             raise RuntimeError("DSRagService 初始化失败：配置加载异常") from e
 
-        # ===================== 初始化核心服务 =====================
+        # ===================== 初始化kb_service =====================
         try:
             self.kb_service: KnowledgeBaseService = KnowledgeBaseService()
             logger.info("KnowledgeBaseService 初始化成功")
@@ -44,7 +44,7 @@ class DSRagService:
             logger.error(f"服务初始化失败：{str(e)}")
             raise RuntimeError("DSRagService 服务初始化异常") from e
 
-        # ===================== 自动加载PDF（保持不变） =====================
+        # ===================== 自动加载PDF =====================
         if data_path is None:
             data_path = get_abs_path(self.k_data_path)
 
@@ -73,157 +73,82 @@ class DSRagService:
                 logger.info(f"正在处理 PDF：{file_name}")
                 result = self.kb_service.upload_entire_pdf(file_path, file_name)
                 logger.info(f"处理完成：{file_name} | 结果：{result}")
-
             logger.info(f"本次共加载 {pdf_count} 个PDF文件")
 
         except Exception as e:
             logger.error(f"批量加载PDF失败：{str(e)}")
 
+
     def format_docs(self, docs: List[Document]) -> str:
         """
-        将检索到的文档格式化为带页码溯源的字符串
-        Args:
-            docs: Document列表
-        Returns:
-            格式化后的参考资料文本
+        获取带页码、来源的格式化文档，并拼接成最终返回字符串
+
+        KnowledgeBaseService中的定义：
+            page.metadata["source"] = file_name
+            page.metadata["page_num"] = page_num
         """
         if not docs:
             logger.warning("无文档可格式化")
             return "未找到相关资料"
 
-        logger.info(f"开始格式化 {len(docs)} 个文档")
         formatted_list = []
+        idx = 1
 
-        for idx, doc in enumerate(docs, 1):
+        for doc in docs:
+            #  先使用当前序号
             source = doc.metadata.get("source", "未知文件")
             page = doc.metadata.get("page_num") or doc.metadata.get("page") or 1
             page = max(int(page), 1)
             content = doc.page_content.strip()
-
-            item = f"【参考资料{idx} | {source} 第{page}页】\n{content}"
+            # 用当前的 idx
+            item = f"【参考资料{idx} | {source} 第{page}页】\n{content} "
             formatted_list.append(item)
-
-        logger.info("格式化完成，返回带页码溯源文本")
+            # 2. 用完以后序号遍历
+            idx += 1
         return "\n\n".join(formatted_list)
 
-    # ===================== 【新增：RAG 模型过滤函数】 =====================
-    def filter_documents(self, query: str, docs: List[Document]) -> str:
-        """
-        RAG 后处理：使用模型过滤章节 + 清洗脏数据
-        """
-        try:
-            logger.info("开始执行 RAG 模型过滤 + 内容清洗")
 
-            # 1. 加载过滤prompt
-            filter_prompt = load_filter_prompt()
-
-            # 2. 拼接文档（带文件名，让模型判断章节）
-            doc_texts = []
-            for doc in docs:
-                source = doc.metadata.get("source", "未知文件")
-                content = doc.page_content.strip()
-                doc_texts.append(f"【文件名】{source}\n【内容】{content}")
-
-            all_docs = "\n-------------------\n".join(doc_texts)
-
-            # 3. 构造prompt
-            final_prompt = filter_prompt.format(query=query) + "\n\n待筛选资料：\n" + all_docs
-
-            # 4. 模型过滤
-            result = chat_model.invoke(final_prompt).content
-            logger.info("RAG 模型过滤完成")
-            return result
-
-        except Exception as e:
-            logger.error(f"模型过滤失败: {e}")
-            return self.format_docs(docs)  # 失败则降级返回原始格式化内容
-
-    # ===================== 【新增2：提取定位行（不返回原文）】 =====================
     def extract_location_only(self, formatted_text: str) -> str:
         """
-        从格式化文本中只提取定位行，不包含原文内容
-        Args:
-            formatted_text: format_docs 返回的完整文本（包含定位行+原文）
-        Returns:
-            只包含定位行的字符串，如：
-            【参考资料1 | 文件名 第2页】
-            【参考资料2 | 文件名 第5页】
+        只提取定位，去掉正文内容，仅返回页码。
+        正则是为了匹配上方formatted_docs自定义的定位格式
         """
         if not formatted_text:
             return ""
-
-        # 正则匹配：匹配以【参考资料开头，到第X页】结束的行
-        # 格式示例：【参考资料1 | 7.3.3_1 红黑树的定义和性质_副本.pdf 第2页】
         pattern = r'【参考资料\d+ \| [^】]+?第\d+页】'
 
+        #系统正则模块re.findall返回列表套字符串
         location_lines = re.findall(pattern, formatted_text)
-
         if location_lines:
-            result = "\n".join(location_lines)
-            logger.info(f"提取定位行成功，共 {len(location_lines)} 条")
-            return result
+            return "\n".join(location_lines)
+        else:
+            return ""
 
-        logger.warning("未提取到定位行，返回空字符串")
-        return ""
 
-    # ===================== 【修改3：search 方法增加模式选择】 =====================
     def search(self, query: str, k: Optional[int] = None, mode: str = "full") -> str:
         """
-        对外核心检索接口
-        Args:
-            query: 查询问题
-            k: 召回数量，为空则使用配置默认值
-            mode: 返回模式
-                  - "full": 返回完整内容（定位行+原文）【默认，保持兼容】
-                  - "location_only": 只返回定位行【新增，用于前端清爽显示】
-        Returns:
-            格式化后的参考资料（根据mode决定内容）
+            mode是自定义参数，有full和location_only两种模式
         """
-        logger.info("=" * 50)
-        logger.info(f"用户检索查询：{query} | mode={mode}")
-
         try:
             k = k or self.k_default_k
-            logger.info(f"召回数量 k = {k}")
-
             retriever = self.vector_service.get_retriever(search_kwargs={"k": k})
             docs = retriever.invoke(query)
 
             if not docs:
-                logger.warning("检索结果为空")
                 return "未在王道408数据结构知识库中找到相关内容"
-
-            logger.info(f"检索成功，命中 {len(docs)} 条结果")
-
-            # 【修改点】根据 mode 决定返回内容
+            #调用上方的自定义函数，将检索的文档格式化
             full_formatted = self.format_docs(docs)
 
             if mode == "location_only":
-                # 只返回定位行
-                result = self.extract_location_only(full_formatted)
-                logger.info(f"返回模式：仅定位行 | 长度={len(result)}")
-                return result
-            else:
-                # 默认返回完整内容（定位行+原文）
-                # 注意：这里你也可以选择先过 filter_documents 清洗
-                # cleaned_content = self.filter_documents(query, docs)
-                # return cleaned_content
-                logger.info(f"返回模式：完整内容")
-                return full_formatted
+                return self.extract_location_only(full_formatted)
+            return full_formatted
 
         except Exception as e:
             logger.error(f"检索执行异常：{str(e)}")
             return f"检索服务暂时不可用：{str(e)}"
 
+
     def search_with_scores(self, query: str, k: Optional[int] = None) -> List[Document]:
-        """
-        内部使用接口：返回原始 Document 对象（供后续结构化处理）
-        Args:
-            query: 查询语句
-            k: 召回数量
-        Returns:
-            Document 列表
-        """
         try:
             k = k or self.k_default_k
             retriever = self.vector_service.get_retriever(search_kwargs={"k": k})
@@ -236,12 +161,11 @@ class DSRagService:
 # ===================== 单例模式 =====================
 _rag_service_instance: Optional[DSRagService] = None
 
-
 def get_rag_service() -> DSRagService:
+    """
+    获取唯一的DSRagService，避免重复创建
+    """
     global _rag_service_instance
-
     if _rag_service_instance is None:
         _rag_service_instance = DSRagService()
-        logger.info("RAG 服务单例创建完成")
-
     return _rag_service_instance
