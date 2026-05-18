@@ -1,21 +1,28 @@
 #===================================将langchain的13FileChatMessageHistory复制过来===========================================
 #==============================然后在  final_rag_with_chat_history  中通过import本文件调用类===================================
 import os,json
+
 from langchain_core.messages import BaseMessage
 from typing import Sequence
+
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import message_to_dict,messages_from_dict
+
+from utils.path_tool import get_abs_path
+from utils.config_handler import chroma_conf
 
 
 
 class FileChatMessageHistory(BaseChatMessageHistory):
-    def __init__(self,session_id,storage_path):
-        self.session_id = session_id        #会话id
-        self.storage_path = storage_path    #不同会话id对应的历史文件，所在的文件夹路径
-        #完整的文件路径
-        self.file_path = os.path.join(self.storage_path,self.session_id)
-        #确保文件夹存在
-        os.makedirs(os.path.dirname(self.file_path),exist_ok=True)
+    def __init__(self, session_id: str):
+        self.session_id = session_id
+
+        # 从配置读取 + 转绝对路径
+        self.storage_path = get_abs_path(chroma_conf.get("chat_history_path", "./chat_history"))
+
+        # 最终文件路径（安全、统一、规范）
+        self.file_path = os.path.join(self.storage_path, f"{session_id}.json")
+        os.makedirs(self.storage_path, exist_ok=True)
 
 
 
@@ -50,6 +57,6 @@ class FileChatMessageHistory(BaseChatMessageHistory):
 
 
 
+# 修改后
 def get_history (session_id):
-    return FileChatMessageHistory(session_id,"./chat_history/")
-
+    return FileChatMessageHistory(session_id)

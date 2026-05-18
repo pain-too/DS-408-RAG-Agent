@@ -14,8 +14,9 @@ venv/
 .DS_Store
 *.swp
 
-# ==================== Agent 项目数据 ====================
-# 从仓库根目录匹配，也支持在 Agent/ 目录下生效
+# ==================== Agent 项目忽略 ====================
+Agent/ingest.py        # 👈 已加入：忽略数据入库脚本
+Agent/test.py          # 👈 已加入：忽略测试文件
 Agent/chroma_db/
 Agent/data/
 Agent/logs/
@@ -24,7 +25,7 @@ Agent/__pycache__/
 Agent/.DS_Store
 Agent/.idea/
 
-# 补充：在 Agent/ 目录下直接匹配的规则（双重保险）
+# 本地生效兼容
 chroma_db/
 data/
 logs/
@@ -33,7 +34,7 @@ __pycache__/
 .DS_Store
 .idea/
 
-# ==================== RAG 项目数据 ====================
+# ==================== RAG 项目忽略 ====================
 RAG/chroma_db/
 RAG/chat_history/
 RAG/data/
@@ -44,7 +45,7 @@ RAG/.idea/
 RAG/.DS_Store
 RAG/*.pyc
 
-# 补充：在 RAG/ 目录下直接匹配的规则（双重保险）
+# 本地生效兼容
 chroma_db/
 chat_history/
 data/
@@ -56,6 +57,3 @@ __pycache__/
 
 # ==================== 临时文件 ====================
 test_temp/
-*.tmp
-*.log
-*.bak
