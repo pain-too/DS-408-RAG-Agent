@@ -14,17 +14,3 @@ def load_system_prompts():
         return open(system_prompt_path, "r",encoding="utf-8").read()
     except Exception as e:
         logger.error(f"[load_system_prompts解析系统提示词出错{str(e)}")
-
-# ====================== 【工程化：过滤提示词加载】 ======================
-def load_filter_prompt():
-    try:
-        filter_prompt_path = get_abs_path(prompts_conf["filter_prompt_path"])
-    except KeyError as e:
-        logger.error(f"[load_filter_prompt] 在yaml配置项中没有 filter_prompt_path 配置项")
-        raise e
-
-    try:
-        return open(filter_prompt_path, "r", encoding="utf-8").read()
-    except Exception as e:
-        logger.error(f"[load_filter_prompt] 解析过滤提示词出错 {str(e)}")
-        raise e

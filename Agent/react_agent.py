@@ -15,37 +15,47 @@ class ReactAgent:
         )
 
     def execute_stream(self, query: str):
-        """真正的 Agent 流式执行 - 支持工具调用"""
-
+        """
+            Agent 流式执行 - 支持工具调用
+            LangChain标准消息格式：字典，且字典的值是列表套字典
+        """
         input_dict = {
             "messages": [
                 {"role": "user", "content": query}
             ]
         }
 
-        # 使用 stream 模式，会输出所有中间步骤
-        for chunk in self.agent.stream(
-                input_dict,
-                stream_mode="values"
-        ):
+        # 使用 values 模式，会输出所有if,elif判断的结果
+        for chunk in self.agent.stream(input_dict, stream_mode="values"):
             messages = chunk.get('messages', [])
             if not messages:
                 continue
 
             latest_message = messages[-1]
-
-            # 判断消息类型并输出相应内容
+            # 判断消息类型并输出，没有就返回None
             message_type = getattr(latest_message, 'type', None)
 
-            # Agent 正在思考或调用工具
-            if message_type == 'ai' and hasattr(latest_message, 'tool_calls') and latest_message.tool_calls:
-                tool_names = [tc.get('name', 'unknown') for tc in latest_message.tool_calls]
-                yield f"\n🔧 调用工具: {', '.join(tool_names)}\n"
+            # 判断 Agent 是否在思考或调用工具
+            """
+            attr:attribute属性。消息分两种，带tool_calls或不带。
+            AIMessage分两种，只有调用工具时才会有tool_calls
 
-            # 工具执行结果
+            latest_message.tool_calls = [
+                {
+                    "name": "ds_knowledge_search",  # 工具名
+                    "parameters": { "query": "..." } # 传给工具的参数
+                }
+            ]
+            """
+            if message_type == 'ai' and hasattr(latest_message, 'tool_calls') and latest_message.tool_calls:
+                # 获取所有AI调用的工具名，返回成列表并流式输出
+                tool_names = [tc.get('name', 'unknown') for tc in latest_message.tool_calls]
+                yield f"\n🔧  {', '.join(tool_names)} 正在被调用  \n"
+
+            # 执行完工具后才会有tool类型的消息
             elif message_type == 'tool':
                 tool_name = getattr(latest_message, 'name', 'unknown')
-                yield f"✅ {tool_name} 执行完成\n"
+                yield f"✅ {tool_name} 执行完成  \n"
 
             # LLM 的最终回答（有内容时输出）
             elif message_type == 'ai':

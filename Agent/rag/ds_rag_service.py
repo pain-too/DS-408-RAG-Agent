@@ -9,8 +9,6 @@ from utils.config_handler import chroma_conf
 from utils.path_tool import get_abs_path
 from utils.logger_handler import logger
 from model.factory import embedding_model
-from utils.prompt_loader import load_filter_prompt
-from model.factory import chat_model
 # RAG 核心模块
 from rag.KnowledgeBaseService import KnowledgeBaseService
 from rag.vector_store import VectorStoreService
