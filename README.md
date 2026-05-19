@@ -30,10 +30,8 @@ DS-408-RAG-Agent/
 ├── .gitignore
 │
 ├── ingest.py                     # 文档入库入口：PDF批量向量化
-│
-├── agent/                        # Agent 核心模块
-│   ├── react_agent.py               # **ReAct 智能推理循环**（核心功能）
-│   └── agent_app_qa.py              # 智能问答主入口
+├── react_agent.py                # **ReAct 智能推理循环**（核心功能）
+├── agent_app_qa.py               # 智能问答主入口
 │
 ├── rag/                          # RAG 检索增强模块
 │   ├── ds_rag_service.py            # RAG 核心业务逻辑
