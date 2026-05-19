@@ -1,14 +1,22 @@
 from langchain_core.tools import tool
 from rag.ds_rag_service import get_rag_service
 
-rag_service = get_rag_service()
+# 延迟初始化：第一次调用时才创建
+_rag_service = None
+
+def _get_rag():
+    global _rag_service
+    if _rag_service is None:
+        _rag_service = get_rag_service()
+    return _rag_service
 
 @tool
 def ds_knowledge_search(query: str) -> str:
     """
     王道408数据结构 —— 知识点检索工具
     """
-    result = rag_service.search(query, mode="location_only") # 👈 修复
+    rag = _get_rag()
+    result = rag.search(query, mode="location_only")
     if not result:
         return "未在王道408数据结构资料库检索到相关内容，请换一种提问方式。"
     return result
@@ -18,7 +26,8 @@ def ds_concept_compare(query: str) -> str:
     """
     王道408数据结构 —— 易混概念对比辨析工具
     """
-    context = rag_service.search(query, mode="location_only") # 👈 修复
+    rag = _get_rag()
+    context = rag.search(query, mode="location_only")
 
     ans = f"""
 # 408数据结构易混概念对比分析
@@ -41,7 +50,8 @@ def ds_chapter_summary(chapter_name: str) -> str:
     """
     王道408数据结构 —— 章节知识点归纳工具
     """
-    context = rag_service.search(chapter_name, mode="location_only") # 👈 修复
+    rag = _get_rag()
+    context = rag.search(chapter_name, mode="location_only")
 
     ans = f"""
 # 408数据结构「{chapter_name}」章节归纳
