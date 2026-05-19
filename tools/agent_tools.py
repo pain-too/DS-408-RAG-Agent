@@ -1,5 +1,4 @@
 from langchain_core.tools import tool
-from rag.ds_rag_service import get_rag_service
 
 # 延迟初始化：第一次调用时才创建
 _rag_service = None
@@ -7,6 +6,8 @@ _rag_service = None
 def _get_rag():
     global _rag_service
     if _rag_service is None:
+        # 关键：把 import 放在函数内部，确保 API Key 已经设置
+        from rag.ds_rag_service import get_rag_service
         _rag_service = get_rag_service()
     return _rag_service
 
