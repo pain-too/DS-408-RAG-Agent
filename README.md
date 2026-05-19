@@ -28,10 +28,10 @@
 DS-408-RAG-Agent/
 ├── requirements.txt
 ├── .gitignore
-│
+├── .python-version
+│ 
 ├── ingest.py                     # 文档入库入口：PDF批量向量化
 ├── react_agent.py                # **ReAct 智能推理循环**（核心功能）
-├── agent_app_qa.py               # 智能问答主入口
 ├── streamit_app.py               # 线上部署入口
 ├── rag/                          # RAG 检索增强模块
 │   ├── ds_rag_service.py            # RAG 核心业务逻辑
