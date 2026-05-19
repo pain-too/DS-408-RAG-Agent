@@ -3,10 +3,8 @@ import os
 
 # ==================== 兼容本地和云端的 API Key 读取 ====================
 try:
-    # Streamlit Cloud 环境
     dashscope_key = st.secrets["DASHSCOPE_API_KEY"]
 except (FileNotFoundError, KeyError, AttributeError):
-    # 本地开发环境
     dashscope_key = os.environ.get("DASHSCOPE_API_KEY")
 
 if not dashscope_key:
@@ -15,22 +13,22 @@ if not dashscope_key:
 
 os.environ["DASHSCOPE_API_KEY"] = dashscope_key
 
-# ==================== 导入模块（放在 key 设置之后） ====================
-from react_agent import ReactAgent
-from rag.ds_rag_service import DSRagService
+# ==================== 延迟导入：确保 API Key 已设置 ====================
+# 不要在这里导入！让后面的函数内部导入
 
 st.set_page_config(page_title="408答疑助手", page_icon="📚")
 st.title("📚 DS-408-RAG-Agent 考研智能答疑")
 
-
-# ==================== 初始化 RAG 和 Agent ====================
+# ==================== 初始化 RAG 和 Agent（延迟初始化）====================
 @st.cache_resource
 def init_services():
-    """缓存服务，避免重复初始化"""
-    rag = DSRagService()
+    # 在函数内部导入，确保 API Key 已经设置
+    from rag.ds_rag_service import DSRagService
+    from react_agent import ReactAgent
+    
+    rag = DSRagService(data_path=None)  # 不自动加载 PDF
     agent = ReactAgent()
     return rag, agent
-
 
 try:
     rag, agent = init_services()
@@ -51,21 +49,17 @@ for msg in st.session_state.messages:
 prompt = st.chat_input("请输入你的问题...")
 
 if prompt:
-    # 显示用户问题
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # AI 回答（使用 Agent）
     with st.chat_message("assistant"):
         with st.spinner("🤖 Agent 正在思考..."):
             full_answer = ""
             placeholder = st.empty()
-
-            # Agent 流式执行
+            
             for chunk in agent.execute_stream(prompt):
                 full_answer += chunk
                 placeholder.markdown(full_answer)
 
-    # 保存历史
     st.session_state.messages.append({"role": "assistant", "content": full_answer})
