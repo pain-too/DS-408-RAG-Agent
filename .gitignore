@@ -26,7 +26,6 @@ Agent/.DS_Store
 Agent/.idea/
 
 # 本地生效兼容
-chroma_db/
 data/
 logs/
 md5_record.txt
