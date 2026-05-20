@@ -42,7 +42,9 @@ class DSRagService:
             logger.error(f"服务初始化失败：{str(e)}")
             raise RuntimeError("DSRagService 服务初始化异常") from e
 
-        # ===================== 自动加载PDF =====================
+        # ===================== 本地版本：自动加载PDF =====================
+        # =============== 线上运行：直接使用数据库，不加载文件 ===============
+        """
         if data_path is None:
             data_path = get_abs_path(self.k_data_path)
 
@@ -50,7 +52,10 @@ class DSRagService:
         self.pdf_upload_folder_with_md5(data_path)
 
         logger.info("DSRagService 初始化完成 ✅")
+        """
+        logger.info("✅ 直接使用已上传的向量库，跳过PDF加载")
         logger.info("=" * 60)
+
 
     def pdf_upload_folder_with_md5(self, folder_path: str) -> None:
         try:
