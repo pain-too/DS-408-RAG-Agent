@@ -3,7 +3,7 @@ import os
 import sys
 from pathlib import Path
 
-# 必须加：解决云端找不到 rag 模块
+# 解决云端找不到 rag 模块
 sys.path.append(str(Path(__file__).parent))
 
 # ==================== API KEY 兼容本地 & 云端 ====================
@@ -31,14 +31,14 @@ st.markdown("""
 | 工具 | 功能  | 提问示例 |
 |------|------|------------|
 | 知识检索ds_knowledge_search | 从PDF知识库查找相关内容 | 1、简述栈的基本定义与特点  <br> 2、红黑树是什么 |
-| 概念对比ds_concept_compare | 对比两个易混淆概念 | 1、区分顺序表与链表优缺点  <br> 2、对比深度优先与广度优先遍历 |
-| 章节总结ds_chapter_summary | 输出指定章节核心考点 | 1、总结树结构高频考试知识点  <br> 2、对比各类排序算法 |
+| 概念对比ds_concept_compare | 对比两个易混淆概念 | 1、对比顺序表与链表优缺点  <br> 2、对比三种处理最短路径问题的方法 |
+| 章节总结ds_chapter_summary | 输出指定章节核心考点 | 1、总结树结构高频考试知识点  <br> 2、总结处理冲突的方法 |
 
 > 🤖 Agent 会自动判断需要调用哪个工具，无需手动指定  
 > 📍 回答后会自动展示参考资料的文件及页码定位
 """, unsafe_allow_html=True)
 
-# ==================== 初始化（你原版逻辑完全不变） ====================
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -79,11 +79,11 @@ if prompt:
                 full_answer += chunk
                 placeholder.markdown(full_answer, unsafe_allow_html=True)
 
-            # ==================== 你的原版 正则提取定位（100%保留） ====================
+            # ====================正则提取定位 ====================
             with st.spinner("📍 正在检索参考资料定位..."):
                 location_info = st.session_state.rag.search(
                     query=prompt,
-                    mode="location_only"  # 你原版的正则提取模式 ✅
+                    mode="location_only"
                 )
 
             if location_info and location_info != "未在王道408数据结构知识库中找到相关内容":

@@ -6,7 +6,7 @@ _rag_service = None
 def _get_rag():
     global _rag_service
     if _rag_service is None:
-        # 关键：把 import 放在函数内部，确保 API Key 已经设置
+        # 把 import 放在函数内部，确保 API Key 已经设置
         from rag.ds_rag_service import get_rag_service
         _rag_service = get_rag_service()
     return _rag_service

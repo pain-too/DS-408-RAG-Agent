@@ -151,15 +151,6 @@ class DSRagService:
             return f"检索服务暂时不可用：{str(e)}"
 
 
-    def search_with_scores(self, query: str, k: Optional[int] = None) -> List[Document]:
-        try:
-            k = k or self.k_default_k
-            retriever = self.vector_service.get_retriever(search_kwargs={"k": k})
-            return retriever.invoke(query)
-        except Exception as e:
-            logger.error(f"search_with_scores 执行失败：{str(e)}")
-            return []
-
 
 # ===================== 单例模式 =====================
 _rag_service_instance: Optional[DSRagService] = None
