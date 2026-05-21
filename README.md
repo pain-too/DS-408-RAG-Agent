@@ -142,3 +142,7 @@ DASHSCOPE_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxx
 ```bash
 streamlit run streamlit_app.py
 ```
+
+
+## ❀ 温馨提示
+若要查看项目的完整构建过程，请移步至https://github.com/pain-too/study_record
